@@ -1,33 +1,45 @@
-; Multithreading Lab 2
-; Peterson Algorithm on Assembler
-; Use it on your own risk
-; Created by a.kicha@knu.ua
-; on 02.11.2022
+.386
+.MODEL flat, stdcall
+ STD_OUTPUT_HANDLE EQU -11 
+ GetStdHandle PROTO, nStdHandle: DWORD 
+ WriteConsoleA PROTO, handle: DWORD, lpBuffer:PTR BYTE, nNumberOfBytesToWrite:DWORD, lpNumberOfBytesWritten:PTR DWORD, lpReserved:DWORD
+ ExitProcess PROTO, dwExitCode: DWORD 
 
-; Compiler Configuration
-.586	; the program is written for at least .386 family of processors
-.model flat, stdcall	; each segment takes 64kB space	
-.stack 80h	; stack size is precisely 128 bytes
-option casemap:none
+ .data
+ consoleOutHandle dd ? 
+ bytesWritten dd ? 
+ message db "Hello World",13,10
+ lmessage dd 13
 
-; user32.lib procedures
-extern MessageBoxA@16:near
+ .code
+ main PROC
+  push STD_OUTPUT_HANDLE	; function argument
+  call GetStdHandle
+  add esp, 4	; clean the unnecessary STD_OUTPUT from the stack
+  mov consoleOutHandle, eax 
+  mov edx,offset message 
+  pushad    
+  mov eax, lmessage
+  push 0
+  push offset bytesWritten
+  push eax
+  push edx
+  push consoleOutHandle
+  call WriteConsoleA
+  add esp, 20	; forget about the function parameters from the previous step
+  popad
+  call testproc
+  call endprog
+ main ENDP
 
-; External libraries
-;include C:\masm32\include\user32.inc
-;includelib C:\masm32\lib\user32.lib
+ endprog PROC
+   push 0
+   call ExitProcess
+   add esp, 4
+   ret
+  endprog endp
 
-; Data Segment
-.data
-	msg db 'Hello, World!', 0	; define bytes
-
-; Code Segment
-.code
-; Start of the program
-_start:
-	push 0	; the last argument of the MessageBoxA - type of window
-	push offset msg ; the second last argument of the MessageBoxA function - window head
-	push offset msg ; the second argument of the MessageBoxA function - window message
-	push 0	; the first argument of the MessageBoxA function - related window identifier
-	call MessageBoxA@16 ; call the function, it takes the parameters from the stack
-end _start
+  testproc PROC
+    ret
+  testproc endp
+END main
