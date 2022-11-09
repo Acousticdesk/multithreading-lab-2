@@ -17,7 +17,8 @@ ExitProcess PROTO, dwExitCode: DWORD
 
  consoleOutHandle dd ? ; handle to use console to print debug messages
  bytesWritten dd ? ; reserve a place for the console output
- msg db "LOG", 13, 10
+ msg1 db "LOG_1", 13, 10
+ msg2 db "LOG_2", 13, 10
 
 .code
  proc1 PROC
@@ -37,7 +38,9 @@ ExitProcess PROTO, dwExitCode: DWORD
    mov flag1, 0 ; done, mark that the current thread doesn’t need to work with the critical section anymore
    MFENCE
 
+   push offset msg1
    call consoleLog
+   add esp, 4
 
    ret ; simply return from the function as it is just a simulation of working with a critical section
  proc1 ENDP
@@ -59,7 +62,9 @@ ExitProcess PROTO, dwExitCode: DWORD
    mov flag2, 0 ; done, mark that the current thread doesn’t need to work with the critical section anymore
    MFENCE
    
+   push offset msg2
    call consoleLog
+   add esp, 4
 
    ret ; simply return from the function as it is just a simulation of working with crit. section
  proc2 ENDP
@@ -103,14 +108,24 @@ ExitProcess PROTO, dwExitCode: DWORD
  ; parameters in stack
  ; 1 - message string
  consoleLog PROC
+   push eax ; save the old value of the eax register
+   mov eax, [esp + 8] ; function argument: message. 0 bytes = eax value + 4 bytes = return address + 4 bytes = procedure argument = 8 bytes
+
    push 0
    push offset bytesWritten
-   push 3 ; lmessage
-   push offset msg; message
+   push 5 ; lmessage
+   push eax; message
    push consoleOutHandle
 
    call WriteConsoleA
    add esp, 20	; forget about the function parameters from the previous step
+
+   ; 20 bytes - arguments to the WriteConsoleA procedure
+
+   pop eax
+   add esp, 4
+
+   ; 4 bytes - saved old value of the eax register
 
    ret
  consoleLog ENDP
